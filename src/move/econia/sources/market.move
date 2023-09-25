@@ -17070,8 +17070,8 @@ module econia::market {
 
     #[test]
     #[expected_failure(abort_code = E_CUSTODIAN_MARKET)]
-    /// Verify failure for placing non custodian order to custodian market
-    fun test_custodian_market_invalid_order()
+    /// Verify failure for placing non custodian limit order to custodian market
+    fun test_custodian_market_invalid_limit_order()
     acquires
     OrderBooks
     {
@@ -17101,10 +17101,10 @@ module econia::market {
         registry::drop_underwriter_capability_test(underwriter_capability);
     }
 
-
     #[test]
-    /// Verify failure for placing non custodian order to custodian market
-    fun test_custodian_market_order()
+    #[expected_failure(abort_code = E_CUSTODIAN_MARKET)]
+    /// Verify failure for placing non custodian market order to custodian market
+    fun test_custodian_market_invalid_market_order()
     acquires
     OrderBooks
     {
@@ -17136,6 +17136,53 @@ module econia::market {
         registry::drop_underwriter_capability_test(underwriter_capability);
         // Drop custodian capability.
         registry::drop_custodian_capability_test(custodian_capability);
+    }
+
+
+    #[test]
+    #[expected_failure(abort_code = E_CUSTODIAN_MARKET)]
+    /// Verify failure for placing non custodian market order to custodian market
+    fun test_custodian_invalid_market_limit_order()
+    acquires
+    OrderBooks
+    {
+        let (market_id, user_0, user_1) = init_custodian_generic_market();
+
+        let price = 1;
+        let size_taker          = MIN_SIZE_GENERIC;
+        let self_match_behavior = ABORT;
+        let quote_match         = size_taker * price * TICK_SIZE_GENERIC;
+
+        let base_deposit_maker  = 100;
+
+        let underwriter_capability = registry::get_underwriter_capability_test(
+            UNDERWRITER_ID); // Get underwriter capability.
+        let custodian_capability_user_0 = registry::get_custodian_capability_test(
+            CUSTODIAN_ID_USER_0); // Get custodian capability.
+        let custodian_capability_user_1 = registry::get_custodian_capability_test(
+            CUSTODIAN_ID_USER_1); // Get custodian capability.
+
+        // Deposit maker assets.
+        user::deposit_generic_asset(
+            @user_0, market_id, get_custodian_id(&custodian_capability_user_0), base_deposit_maker,
+            &underwriter_capability);
+        user::deposit_coins<QC>(@user_1, market_id, get_custodian_id(&custodian_capability_user_1),
+            assets::mint_test(quote_match));
+
+        let (_, _, _, _) = place_limit_order_custodian<
+            GenericAsset, QC>(address_of(&user_0), market_id, @integrator,
+            ASK, size_taker, price, NO_RESTRICTION,
+            self_match_behavior, &custodian_capability_user_0);
+
+        let (_, _, _) = place_market_order_user<
+            GenericAsset, QC>(&user_1, market_id, @integrator,
+            BID, size_taker, self_match_behavior);
+
+        // Drop underwriter capability.
+        registry::drop_underwriter_capability_test(underwriter_capability);
+        // Drop custodian capability.
+        registry::drop_custodian_capability_test(custodian_capability_user_0);
+        registry::drop_custodian_capability_test(custodian_capability_user_1);
     }
     // Tests <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
