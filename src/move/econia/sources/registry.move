@@ -288,7 +288,6 @@ module econia::registry {
         /// amounts. A market-wide ID that only applies to markets
         /// having a generic base asset.
         underwriter_id: u64,
-
         /// Is this market full custodian.
         /// Only custodian functions can place orders on full custodian markets
         is_custodian: bool,
@@ -313,7 +312,9 @@ module econia::registry {
         /// `MarketInfo.min_size`.
         min_size: u64,
         /// `MarketInfo.underwriter_id`.
-        underwriter_id: u64
+        underwriter_id: u64,
+        /// `MarketInfo.is_custodian`.
+        is_custodian: bool
     }
 
     /// Emitted when a market is registered.
@@ -637,7 +638,8 @@ module econia::registry {
             lot_size: market_info_ref.lot_size,
             tick_size: market_info_ref.tick_size,
             min_size: market_info_ref.min_size,
-            underwriter_id: market_info_ref.underwriter_id
+            underwriter_id: market_info_ref.underwriter_id,
+            is_custodian: market_info_ref.is_custodian,
         }
     }
 
@@ -2536,7 +2538,8 @@ module econia::registry {
             lot_size: lot_size_1,
             tick_size: tick_size_1,
             min_size: min_size_1,
-            underwriter_id: underwriter_id_generic
+            underwriter_id: underwriter_id_generic,
+            is_custodian: false
         }, 0);
         assert!(get_market_info(2) == MarketInfoView{
             market_id: 2,
@@ -2547,7 +2550,8 @@ module econia::registry {
             lot_size: lot_size_2,
             tick_size: tick_size_2,
             min_size: min_size_2,
-            underwriter_id: NO_UNDERWRITER
+            underwriter_id: NO_UNDERWRITER,
+            is_custodian: false
         }, 0);
         // Drop underwriter capability.
         drop_underwriter_capability_test(underwriter_capability);
@@ -2637,7 +2641,8 @@ module econia::registry {
             lot_size: lot_size_1,
             tick_size: tick_size_1,
             min_size: min_size_1,
-            underwriter_id: underwriter_id_generic
+            underwriter_id: underwriter_id_generic,
+            is_custodian: false
         }, 0);
         assert!(get_market_info(2) == MarketInfoView{
             market_id: 2,
@@ -2648,7 +2653,8 @@ module econia::registry {
             lot_size: lot_size_2,
             tick_size: tick_size_2,
             min_size: min_size_2,
-            underwriter_id: NO_UNDERWRITER
+            underwriter_id: NO_UNDERWRITER,
+            is_custodian: false
         }, 0);
         // Remove both recognized markets.
         remove_recognized_markets(econia, vector[1, 2]);
@@ -2699,7 +2705,8 @@ module econia::registry {
             lot_size: lot_size_2,
             tick_size: tick_size_2,
             min_size: min_size_2,
-            underwriter_id: NO_UNDERWRITER
+            underwriter_id: NO_UNDERWRITER,
+            is_custodian: false
         }, 0);
         // Assert events.
         market_registration_events = event::emitted_events_by_handle(

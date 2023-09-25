@@ -1804,6 +1804,46 @@ module econia::market {
         tick_size: u64,
         min_size: u64,
         utility_coins: Coin<UtilityType>,
+    ): u64
+    acquires OrderBooks {
+        register_market_base_coin_internal<BaseType, QuoteType, UtilityType>(
+            lot_size,
+            tick_size,
+            min_size,
+            utility_coins,
+            false
+        )
+    }
+
+    public fun register_custodian_market_base_coin<
+        BaseType,
+        QuoteType,
+        UtilityType
+    >(
+        lot_size: u64,
+        tick_size: u64,
+        min_size: u64,
+        utility_coins: Coin<UtilityType>,
+    ): u64
+    acquires OrderBooks {
+        register_market_base_coin_internal<BaseType, QuoteType, UtilityType>(
+            lot_size,
+            tick_size,
+            min_size,
+            utility_coins,
+            true
+        )
+    }
+
+    fun register_market_base_coin_internal<
+        BaseType,
+        QuoteType,
+        UtilityType
+    >(
+        lot_size: u64,
+        tick_size: u64,
+        min_size: u64,
+        utility_coins: Coin<UtilityType>,
         is_custodian: bool,
     ): u64
     acquires OrderBooks {
@@ -1860,19 +1900,64 @@ module econia::market {
         min_size: u64,
         utility_coins: Coin<UtilityType>,
         underwriter_capability_ref: &UnderwriterCapability,
-        is_custodian: bool,
     ): u64
     acquires OrderBooks {
-        // Register market in global registry, storing market ID.
-        let market_id = registry::register_market_base_generic_internal<
-            QuoteType, UtilityType>(base_name_generic, lot_size, tick_size,
-            min_size, underwriter_capability_ref, utility_coins, false);
-        // Register order book and quote coin fee store, return market
-        // ID.
-        register_market<GenericAsset, QuoteType>(
-            market_id, base_name_generic, lot_size, tick_size, min_size,
-            registry::get_underwriter_id(underwriter_capability_ref), is_custodian)
+        register_market_base_generic_internal<QuoteType, UtilityType>(
+            base_name_generic,
+            lot_size,
+            tick_size,
+            min_size,
+            utility_coins,
+            underwriter_capability_ref,
+            false
+        )
     }
+
+    public fun register_custodian_market_base_generic<
+        QuoteType,
+        UtilityType
+    >(
+        base_name_generic: String,
+        lot_size: u64,
+        tick_size: u64,
+        min_size: u64,
+        utility_coins: Coin<UtilityType>,
+        underwriter_capability_ref: &UnderwriterCapability,
+    ): u64
+    acquires OrderBooks {
+        register_market_base_generic_internal<QuoteType, UtilityType>(
+            base_name_generic,
+            lot_size,
+            tick_size,
+            min_size,
+            utility_coins,
+            underwriter_capability_ref,
+            true
+        )
+    }
+
+   fun register_market_base_generic_internal<
+       QuoteType,
+       UtilityType
+   >(
+       base_name_generic: String,
+       lot_size: u64,
+       tick_size: u64,
+       min_size: u64,
+       utility_coins: Coin<UtilityType>,
+       underwriter_capability_ref: &UnderwriterCapability,
+       is_custodian: bool,
+   ): u64 acquires OrderBooks{
+       // Register market in global registry, storing market ID.
+       let market_id = registry::register_market_base_generic_internal<
+           QuoteType, UtilityType>(base_name_generic, lot_size, tick_size,
+           min_size, underwriter_capability_ref, utility_coins, is_custodian);
+       // Register order book and quote coin fee store, return market
+       // ID.
+       register_market<GenericAsset, QuoteType>(
+           market_id, base_name_generic, lot_size, tick_size, min_size,
+           registry::get_underwriter_id(underwriter_capability_ref), is_custodian)
+   }
 
     /// Swap against the order book between a user's coin stores.
     ///
@@ -2454,14 +2539,13 @@ module econia::market {
         user: &signer,
         lot_size: u64,
         tick_size: u64,
-        min_size: u64,
-        is_custodian: bool
+        min_size: u64
     ) acquires OrderBooks {
         // Get market registration fee, denominated in utility coins.
         let fee = incentives::get_market_registration_fee();
         // Register market with base coin, paying fees from coin store.
         register_market_base_coin<BaseType, QuoteType, UtilityType>(
-            lot_size, tick_size, min_size, coin::withdraw(user, fee), is_custodian);
+            lot_size, tick_size, min_size, coin::withdraw(user, fee));
     }
 
     /// Public entry function wrapper for `swap_between_coinstores()`.
@@ -4547,14 +4631,14 @@ module econia::market {
         // Register pure coin market.
         register_market_base_coin<BC, QC, UC>(
             LOT_SIZE_COIN, TICK_SIZE_COIN, MIN_SIZE_COIN,
-            assets::mint_test(fee), false);
+            assets::mint_test(fee));
         let underwriter_capability = registry::get_underwriter_capability_test(
             UNDERWRITER_ID); // Get market underwriter capability.
         // Register generic market.
         register_market_base_generic<QC, UC>(
             string::utf8(BASE_NAME_GENERIC), LOT_SIZE_GENERIC,
             TICK_SIZE_GENERIC, MIN_SIZE_GENERIC, assets::mint_test(fee),
-            &underwriter_capability, false);
+            &underwriter_capability);
         // Drop underwriter capability.
         registry::drop_underwriter_capability_test(underwriter_capability);
         // Set custodian IDs to be valid.
@@ -13207,7 +13291,7 @@ module econia::market {
         coin::deposit<UC>(@user, assets::mint_test(fee));
         // Register pure coin market from coinstore.
         register_market_base_coin_from_coinstore<BC, QC, UC>(
-            &user, LOT_SIZE_COIN, TICK_SIZE_COIN, MIN_SIZE_COIN, false);
+            &user, LOT_SIZE_COIN, TICK_SIZE_COIN, MIN_SIZE_COIN);
         // Get market info returns from registry.
         let (base_name_generic_r, lot_size_r, tick_size_r, min_size_r,
              underwriter_id_r) = registry::get_market_info_for_market_account(
@@ -13245,7 +13329,7 @@ module econia::market {
         let market_id = register_market_base_generic<QC, UC>(
             string::utf8(BASE_NAME_GENERIC), LOT_SIZE_GENERIC,
             TICK_SIZE_GENERIC, MIN_SIZE_GENERIC, assets::mint_test<UC>(fee),
-            &underwriter_capability, false);
+            &underwriter_capability);
         // Drop underwriter capability.
         registry::drop_underwriter_capability_test(underwriter_capability);
         // Assert market ID.
@@ -13286,7 +13370,7 @@ module econia::market {
         // Assert market ID return for registering pure coin market not
         // from coin store.
         assert!(register_market_base_coin<QC, BC, UC>(
-            1, 1, 1, assets::mint_test<UC>(fee), false) == 3, 0);
+            1, 1, 1, assets::mint_test<UC>(fee)) == 3, 0);
     }
 
     #[test]
@@ -16957,10 +17041,10 @@ module econia::market {
         let underwriter_capability = registry::get_underwriter_capability_test(
             UNDERWRITER_ID); // Get market underwriter capability.
         // Register generic market.
-        register_market_base_generic<QC, UC>(
+        register_custodian_market_base_generic<QC, UC>(
             string::utf8(BASE_NAME_GENERIC), LOT_SIZE_GENERIC,
             TICK_SIZE_GENERIC, MIN_SIZE_GENERIC, assets::mint_test(fee),
-            &underwriter_capability, true);
+            &underwriter_capability);
         let market_id = 1;
         // Drop underwriter capability.
         registry::drop_underwriter_capability_test(underwriter_capability);
