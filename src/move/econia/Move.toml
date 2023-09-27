@@ -12,10 +12,13 @@ user_0 = "0x2345"
 user_1 = "0x3456"
 integrator = "0x4567"
 
+[dev-addresses]
+econia = "0xdeaddead"
+
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
 # You may need to change this to `main` to run event unit tests, since
 # event unit tests for this package were added before Aptos' event unit
 # testing framework was incorporated into the `mainnet` branch.
-rev = "mainnet"
+rev = "d0581988adf90db9893c9c0d0a7f015153ac4699"
 subdir = "aptos-move/framework/aptos-framework"
