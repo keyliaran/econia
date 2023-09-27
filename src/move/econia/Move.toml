@@ -12,6 +12,9 @@ user_0 = "0x2345"
 user_1 = "0x3456"
 integrator = "0x4567"
 
+[dev-addresses]
+econia = "0xdeaddead"
+
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
 # You may need to change this to `main` to run event unit tests, since
